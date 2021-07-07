@@ -15,7 +15,7 @@
 							<input type="hidden" name="id">
 							<div class="form-group">
 								<label class="control-label">group</label>
-								<input type="text" class="form-control" name="name">
+								<input type="text" class="form-control" name="name" id="name">
 							</div>
 							
 					</div>
@@ -23,6 +23,7 @@
 					<div class="card-footer">
 						<div class="row">
 							<div class="col-md-12">
+							<input type="submit" value="save">
 								<button class="btn btn-sm btn-primary col-sm-3 offset-md-3"> Save</button>
 								<button class="btn btn-sm btn-default col-sm-3" type="button" onclick="$('#manage-group').get(0).reset()"> Cancel</button>
 							</div>
@@ -84,11 +85,14 @@
 <script>
 	
 	$('#manage-group').submit(function(e){
-		e.preventDefault()
-		start_load()
+		var name=$('#name').val();
+		e.preventDefault();
+		start_load();
+		// console.log(new FormData($(this)[0]));
 		$.ajax({
 			url:'ajax.php?action=save_group',
-			data: new FormData($(this)[0]),
+			// data: new FormData($(this)[0]),
+			data: {'name':name},
 		    cache: false,
 		    contentType: false,
 		    processData: false,
@@ -110,7 +114,10 @@
 					},1500)
 
 				}
-			}
+			},
+			error:function(resp){
+            console.log(resp);
+        }
 		})
 	})
 	$('.edit_cat').click(function(){

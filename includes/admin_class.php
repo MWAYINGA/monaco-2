@@ -51,7 +51,8 @@ Class Action {
 				if($key != 'passwors' && !is_numeric($key))
 					$_SESSION['login_'.$key] = $value;
 			}
-			$ip = isset($_SERVER['HTTP_CLIENT_IP']) ? $_SERVER['HTTP_CLIENT_IP'] : isset($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR'];
+			// $ip = isset($_SERVER['HTTP_CLIENT_IP']) ? $_SERVER['HTTP_CLIENT_IP'] : isset($_SERVER['HTTP_X_FORWARDED_FOR']) ? $_SERVER['HTTP_X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR'];
+			$ip=null;
 			$this->db->query("UPDATE cart set user_id = '".$_SESSION['login_user_id']."' where client_ip ='$ip' ");
 				return 1;
 		}else{
@@ -89,6 +90,66 @@ Class Action {
 			return 1;
 		}
 	}
+	function save_role(){
+		extract($_POST);
+		$creator=$_SESSION['login_id'];
+		date_default_timezone_set("Africa/Nairobi");
+		$date=date("y-m-d h:i:sa");	
+		if (empty($role_id)) {
+			$data = " role_id = '' ";
+			$data .= ", role_name = '$RoleName' ";
+			$data .= ", Description = '$Description'";
+			$data .= ", creator='$creator'";
+			$data .= ", date_created='$date'";
+			$save_role=$this->db->query("INSERT INTO user_role set ".$data);
+			$inserted_role_id=$this->db->insert_id;
+			foreach($role_privilages as $k => $v){
+				$data = " user_role_privieges_id = '' ";
+				$data .= ", user_role_id = '$inserted_role_id' ";
+				$data .= ", role_privileges_id = '$role_privilages[$k]' ";
+				$data .= ", creator = '$creator' ";
+				$data .= ", date_created = '$date' ";
+				$save_privilege_on_role=$this->db->query("INSERT INTO user_role_privieges set ".$data);
+				// $save_privilege_on_role=$this->db->query("INSERT INTO `user_role_privieges`(`user_role_id`, `role_privileges_id`, `creator`, `date_created`) VALUES ({$role_id},{$role_privilages[$k]},{$creator},{$date})");
+			}
+			if (isset($save_privilege_on_role)) {
+				if ($save_role) {
+					return 1;
+				}
+			}
+		}else {
+			date_default_timezone_set("Africa/Nairobi");
+			$date=date("y-m-d h:i:sa");
+			$changer = $_SESSION['login_id'];
+			$datechanged = $date;
+			$creator=$_SESSION['login_id'];
+			// $data = " role_id = '' ";
+			$data = " role_name = '$RoleName' ";
+			$data .= ", Description = '$Description' ";
+			$data .= ", changed_by = '$changer' ";
+			$data .= ", date_changed = '$datechanged' ";
+			$update_role=$this->db->query("UPDATE user_role SET {$data} WHERE role_id= {$role_id} ");
+			if ($update_role) {
+				// $delete_role_on_update=$this->db->query("DELETE FROM user_role_privieges WHERE user_role_id ={$role_id}");
+					foreach($role_privilages as $k => $v){
+						$data = " user_role_privieges_id = '' ";
+						$data .= ", user_role_id = '$role_id' ";
+						$data .= ", role_privileges_id = '$role_privilages[$k]' ";
+						$data .= ", creator= '$creator' ";
+						$data .= ", date_created= '$date' ";
+						$update_privilege_on_role=$this->db->query("INSERT INTO user_role_privieges set ".$data);
+						// $update_privilege_on_role=$this->db->query("INSERT INTO `user_role_privieges`(`user_role_id`, `role_privileges_id`, `creator`, `date_created`) VALUES ({$role_id},{$role_privilages[$k]},{$creator},{$date})");
+					}
+					if ($update_privilege_on_role) {
+						return 2;
+					}
+			}	
+		}
+	}
+	function delete_role(){
+		extract($_POST);
+		return 1;
+	}
 	function signup(){
 		extract($_POST);
 		$data = " first_name = '$first_name' ";
@@ -119,10 +180,7 @@ Class Action {
 						$fname = strtotime(date('y-m-d H:i')).'_'.$_FILES['img']['name'];
 						$move = move_uploaded_file($_FILES['img']['tmp_name'],'../assets/img/'. $fname);
 					$data .= ", cover_img = '$fname' ";
-
 		}
-		
-		// echo "INSERT INTO system_settings set ".$data;
 		$chk = $this->db->query("SELECT * FROM system_settings");
 		if($chk->num_rows > 0){
 			$save = $this->db->query("UPDATE system_settings set ".$data." where id =".$chk->fetch_array()['id']);
@@ -148,7 +206,6 @@ Class Action {
 			$creator=$_SESSION['login_id'];
 			date_default_timezone_set("Africa/Nairobi");
 			$date=date("y-m-d h:i:sa");
-			// $datecreated= new DateTime('now');
 			$data .= ", creator='$creator'";
 			$data .= ", date_created='$date'";
 			$save = $this->db->query("INSERT INTO item_categories set ".$data);
@@ -178,10 +235,11 @@ Class Action {
 		extract($_POST);
 		$data = " drug_group_name = '$name' ";
 		if(empty($id)){
+			$data = " drug_group_id = '' ";
+			$data .= ", drug_group_name = '$name' ";
 			$creator=$_SESSION['login_id'];
 			date_default_timezone_set("Africa/Nairobi");
 			$date=date("y-m-d h:i:sa");
-			// $datecreated= new DateTime('now');
 			$data .= ", creator='$creator'";
 			$data .= ", date_created='$date'";
 			$save = $this->db->query("INSERT INTO drug_group set ".$data);
@@ -192,6 +250,7 @@ Class Action {
 			$date=date("y-m-d h:i:sa");
 			$changer=$_SESSION['login_id'];
 			$datechanged= $date;
+			$data = " drug_group_name = '$name' ";
 			$data .= ", changed_by='$changer'";
 			$data .= ", date_changed='$datechanged'";
 			$save = $this->db->query("UPDATE drug_group set ".$data." where drug_group_id=".$id);
@@ -213,7 +272,6 @@ Class Action {
 			$creator=$_SESSION['login_id'];
 			date_default_timezone_set("Africa/Nairobi");
 			$date=date("y-m-d h:i:sa");
-			// $datecreated= new DateTime('now');
 			$data .= ", creator='$creator'";
 			$data .= ", date_created='$date'";
 			$save = $this->db->query("INSERT INTO item_units set ".$data);
@@ -274,10 +332,7 @@ Class Action {
 		$data .="=, drug_group_id = '$group_id' ";
 		$data .= ", item_units_id = '$units' ";
 		$data .= ", sku = '$sku' ";
-		// $data .= ", price = '$price' ";
-		// $data .= ", wholesale_price = '$wholesale_price' ";
 		$data .= ", name = '$name' ";
-		// $data .= ", category_id = '".implode(",",$category_id)."' ";
 		$data .= ", measurement = '$measurement' ";
 		$data .= ", description = '$description' ";
 		if(!isset($prescription)){
@@ -290,13 +345,8 @@ Class Action {
 			$creator=$_SESSION['login_id'];
 			date_default_timezone_set("Africa/Nairobi");
 			$date=date("y-m-d h:i:sa");
-			// $datecreated= new DateTime('now');
 			$data .= ", creator = '$creator' ";
 			$data .= ", date_created = '$date' ";
-			// $save = $this->db->query("INSERT INTO `product_list` set ".$data);
-			// $save= $this->db->query("INSERT INTO `product_list`(`id`, `item_category_id`, `drug_group_id`, `item_units_id`, `sku`, `price`, `wholesale_price`, `name`, `measurement`, `description`, `prescription`, `creator`, `date_created`)
-			// 						 VALUES ('','".$category_id."','".$group_id."','".$units."','".$sku."','".$price."','".$wholesale_price."','".$name."','".$measurement."','".$description."','".$prescription."','".$creator."','".$date."')");
-			// $sql1="INSERT INTO `product_list`(`id`, `item_category_id`, `drug_group_id`, `item_units_id`, `sku`, `price`, `wholesale_price`, `name`, `measurement`, `description`, `prescription`, `creator`, `date_created`) VALUES ('','".$category_id."','".$group_id."','".$units."','".$sku."','".$price."','".$wholesale_price."','".$name."','".$measurement."','".$description."','".$prescription."','".$creator."','".$date."') ";
 			$sql1="INSERT INTO `product_list`(`id`, `item_category_id`, `drug_group_id`, `item_units_id`, `sku`,`name`, `measurement`, `description`, `prescription`, `creator`, `date_created`) VALUES ('','".$category_id."','".$group_id."','".$units."','".$sku."','".$name."','".$measurement."','".$description."','".$prescription."','".$creator."','".$date."') ";
 			$save= $this->db->query($sql1);
 			if($save){
@@ -309,8 +359,6 @@ Class Action {
 			$datechanged= $date;
 			$data .= ", changed_by = '$changer' ";
 			$data .= ", date_changed= '$datechanged' ";
-			// return 2;
-			// $save = $this->db->query("UPDATE product_list SET category_id='".$category_id."',type_id='".$type_id."',price='".$price."',wholesale_price='".$wholesale_price."',name='".$name."',measurement='".$measurement."',description='".$description."',prescription='".$prescription."',changed_by='".$changer."',date_changed='".$datechanged."' WHERE sku='".$sku."'");
 			$sql_update="UPDATE `product_list` SET `item_category_id`='".$category_id."',`drug_group_id`='".$group_id."',`item_units_id`='".$units."',`sku`='".$sku."',`price`='".$price."',`wholesale_price`='".$wholesale_price."',`name`='".$name."',`measurement`='".$measurement."',`description`='".$description."',`prescription`='".$prescription."',`changed_by`='".$changer."',`date_changed`='".$datechanged."' WHERE `id`='".$id."'";
 			$save = $this->db->query($sql_update);
 			if($save){
@@ -402,7 +450,7 @@ Class Action {
 
 				$save1=$this->db->query("INSERT INTO price_list set".$price);
 				$on_batch_available=check_item_available_quantity_by_batch($product_id[$k],$batch_no[$k]);
-				$save2[]= $this->db->query("INSERT INTO inventory set ".$data);
+				$save2= $this->db->query("INSERT INTO inventory set ".$data);
 				$inventory_id=$this->db->insert_id;
 				$batch =" product_by_batch_id = '' ";
 				$batch .=", product_id = '$product_id[$k]' ";
@@ -412,8 +460,7 @@ Class Action {
 				$batch .=", expiredate = '$expiry_date[$k]' ";
 				$batch .=", batch_preference = '0'";
 				$batch .=", creator = '$creator' ";
-				// $batch .=" date_created = '' ";
-				$save4[]=$this->db->query("INSERT INTO product_by_batch set".$batch);
+				$save4=$this->db->query("INSERT INTO product_by_batch set".$batch);
 				$triggerphph1="UPDATE `product_by_batch` SET batch_preference=0 WHERE product_id='".$product_id[$k]."'AND transaction_type_id=1 AND expired_confirmed=0";
 				$save5=$this->db->query($triggerphph1);
 				$triggerphph="UPDATE `product_by_batch` SET batch_preference=1 WHERE product_id='".$product_id[$k]."' AND expired_confirmed=0 AND transaction_type_id=1 AND expiredate=(SELECT MIN(date(expiredate)) FROM product_by_batch)";
@@ -425,7 +472,6 @@ Class Action {
 				$on_hand_by_batch .=", qty_consumed = '$qty[$k]' ";
 				$after_batch=$on_batch_available+$qty[$k];
 				$on_hand_by_batch .=", qty_after = '$after_batch' ";
-				// $on_hand_by_batch .=", inventory_id = '' ";
 				$on_hand_by_batch .=", transaction_type = '1' "; 
 				$on_hand_by_batch .=", creator = '$creator' ";
 				$save6=$this->db->query("INSERT INTO product_on_hand_by_batch SET".$on_hand_by_batch);
@@ -450,9 +496,9 @@ Class Action {
 				$data .= ", other_details = '$details' ";
 				$data .= ", remarks = 'Stock from Receiving-".$ref_no."' ";
 				if(!empty($inv_id[$k])){
-					$save2[]= $this->db->query("UPDATE inventory set ".$data." where id=".$inv_id[$k]);
+					$save2= $this->db->query("UPDATE inventory set ".$data." where id=".$inv_id[$k]);
 				}else{
-					$save2[]= $this->db->query("INSERT INTO inventory set ".$data);
+					$save2= $this->db->query("INSERT INTO inventory set ".$data);
 				}
 			}
 			if(isset($save2)){
@@ -611,7 +657,7 @@ Class Action {
 				
 				return $available;
 			}
-			foreach($product_id as $k => $v):
+			foreach($product_id as $k => $v){
 				$creator=$_SESSION['login_id'];
 				date_default_timezone_set("Africa/Nairobi");
 				$date=date("y-m-d h:i:sa");
@@ -628,8 +674,8 @@ Class Action {
 				$data .=", creator = '$creator'";
 				$data .=", transaction_type  = '$transaction_type'";
 				$data .=", date_created = '$date' ";
-				$save1[]=$this->db->query("INSERT INTO product_on_hand set ".$data);
-			endforeach;
+				$save1=$this->db->query("INSERT INTO product_on_hand set ".$data);
+			}
 			function check_item_available_quantity_by_batch_for_sale($product_id,$batch_no){
 				include 'db_connect.php';
 				$inn = mysqli_query($conn,"SELECT sum(qty) as inn FROM inventory where type = 1 and product_id = '".$product_id."' and batch_no = '".$batch_no."'");
@@ -653,7 +699,7 @@ Class Action {
 				$type=1;
 				$batchNo=check_the_batch_for_product($product_id);
 				$available_by_batch_on_sales=check_item_available_quantity_by_batch_for_sale($product_id,$batchNo);
-						if ($available_by_batch_on_sales > $qty):
+						if ($available_by_batch_on_sales > $qty){
 							$data1 = " product_on_hand_by_batch_id = '' ";
 							$data1 .= ", product_id = '$product_id' ";
 							$data1 .= ", batch_no = '$batchNo' ";
@@ -668,13 +714,14 @@ Class Action {
 							$data1 .= ", transaction_type = '$transaction_type' ";
 							$data1 .= ", creator = '$creator' ";
 							$data1 .= ", date_created = '$date' ";
-							$save4[] = mysqli_query($conn,"INSERT INTO product_on_hand_by_batch SET".$data1);
-							if ($save4) :
+							$save4 = mysqli_query($conn,"INSERT INTO product_on_hand_by_batch SET".$data1);
+							if ($save4) {
 								$success=1;
 								return $success;
 								exit();
-							endif;
-						else:
+						}
+					}
+						else{
 							$data1 = " product_on_hand_by_batch_id = '' ";
 							$data1 .= ", product_id = '$product_id' ";
 							$data1 .= ", batch_no = '$batchNo' ";
@@ -690,18 +737,17 @@ Class Action {
 							$data1 .= ", transaction_type = '$transaction_type' ";
 							$data1 .= ", creator = '$creator' ";
 							$data1 .= ", date_created = '$date' ";
-							$save4[] = mysqli_query($conn,"INSERT INTO product_on_hand_by_batch SET".$data1);
-							if ($save4) :
+							$save4 = mysqli_query($conn,"INSERT INTO product_on_hand_by_batch SET".$data1);
+							if ($save4)
 								product_sales_by_batch_algorism($product_id,$qty,$id,$type,$creator);
-							endif;
-						endif;
+							
+						}
 					}
-
-			foreach($product_id as $k =>$v):
+			foreach($product_id as $k =>$v){
 				$batchNo=check_the_batch_for_product($product_id[$k]);
 				$available_by_batch_on_sales=check_item_available_quantity_by_batch_for_sale($product_id[$k],$batchNo);
 				$ppid=$qty[$k];
-				if ($qty[$k] <= $available_by_batch_on_sales):
+				if ($qty[$k] <= $available_by_batch_on_sales){
 						$data = " product_on_hand_by_batch_id = '' ";
 						$data .= ", product_id = '$product_id[$k]' ";
 						$data .= ", batch_no = '$batchNo' ";
@@ -716,14 +762,13 @@ Class Action {
 						$data .= ", transaction_type = '$transaction_type' ";
 						$data .= ", creator = '$creator' ";
 						$data .= ", date_created = '$date' ";
-						$save41[]= $this->db->query("INSERT INTO product_on_hand_by_batch SET".$data);
+						$save41= $this->db->query("INSERT INTO product_on_hand_by_batch SET".$data);
 						$product_on_hand_by_batch_id=$this->db->insert_id;		
-				else:
+				}else{
 					$mm= product_sales_by_batch_algorism($product_id[$k],$qty[$k],$id,$creator);
-				endif;
-
-			endforeach;
-			
+				}
+					
+				}
 			foreach($product_id as $k => $v){
 				$batchNo=check_the_batch_for_product($product_id[$k]);
 				$data = " form_id = '$id_wholesale' ";
@@ -736,11 +781,10 @@ Class Action {
 				$details = json_encode(array('price'=>$price[$k],'qty'=>$qty[$k]));
 				$data .= ", other_details = '$details' ";
 				$data .= ", remarks = 'Stock out from Sales-".$ref_no."' ";
-				
-				$save2[]= $this->db->query("INSERT INTO inventory set ".$data);	
+				$save2= $this->db->query("INSERT INTO inventory set ".$data);	
 			}
 			if(isset($save2) ){
-				foreach($product_id as $k => $v):
+				foreach($product_id as $k => $v){
 				$creator=$_SESSION['login_id'];
 				date_default_timezone_set("Africa/Nairobi");
 				$date=date("y-m-d h:i:sa");
@@ -753,17 +797,16 @@ Class Action {
 				$data .=", sales_invoice_number = '$number'";
 				$data .=", creator = '$creator' ";
 				$data .=", date_created = '$date' ";
-
-				$save3[]=$this->db->query("INSERT INTO product_on_sales_lists set ".$data);
-				endforeach;
+				$save3=$this->db->query("INSERT INTO product_on_sales_lists set ".$data);
+			}
 				if ($save2) {
 					if ($save3) {
 						return $id_wholesale;
 					}
 				}
 			}
-			
-		}else{
+		}	
+		else{
 			$save = $this->db->query("UPDATE sales_list set ".$data." where id=".$id);
 			$ids = implode(",",$inv_id);
 			$this->db->query("DELETE FROM inventory where type = 1 and form_id ='$id' and id NOT IN (".$ids.") ");
@@ -778,16 +821,16 @@ Class Action {
 				$data .= ", remarks = 'Stock out from Sales-".$ref_no."' ";
 
 				if(!empty($inv_id[$k])){
-					$save2[]= $this->db->query("UPDATE inventory set ".$data." where id=".$inv_id[$k]);
+					$save2= $this->db->query("UPDATE inventory set ".$data." where id=".$inv_id[$k]);
 				}else{
-					$save2[]= $this->db->query("INSERT INTO inventory set ".$data);
+					$save2= $this->db->query("INSERT INTO inventory set ".$data);
 				}
 			}
 			if(isset($save2)){
 				return $id;
 			}
 		}
-	}
+}
 	function save_sales(){
 		extract($_POST);
 		$type=2;
@@ -818,7 +861,6 @@ Class Action {
 		$prescribers .=", creator = '$creator' ";
 		$save_presciption=$this->db->query("INSERT INTO prescription SET".$prescribers);
 		$prescription_id=$this->db->insert_id;
-		// $creator=$_SESSION['login_id'];
 		$data = " customer_id = '$customer_id' ";
 		$data .= ", total_amount = '$tamount' ";
 		$data .=", sales_type = '$type' ";
@@ -831,7 +873,6 @@ Class Action {
 			date_default_timezone_set("Africa/Nairobi");
 			$number=date('Ymd',strtotime(date("y-m-d h:i:sa")))."-".$ref_no;
 			$data .= ", ref_no = '$ref_no' ";
-			
 			$data .=", sales_invoice_number = '$number' ";
 			$save = $this->db->query("INSERT INTO sales_list set ".$data);
 			$id =$this->db->insert_id;
@@ -847,29 +888,23 @@ Class Action {
 				
 				return $available;
 			}
-			foreach($product_id as $k => $v):
+			foreach($product_id as $k => $v){
 				$creator=$_SESSION['login_id'];
 				date_default_timezone_set("Africa/Nairobi");
 				$date=date("y-m-d h:i:sa");
 				$available=check_item_available_quantity($product_id[$k]);
 				$data =" product_on_hand_id = '' ";
 				$data .=", product_id = '$product_id[$k]' ";
-				
 				$data .=", qty_before = '$available' ";
-				
 				$qty_after=$available-$qty[$k];
 				$data .=", qty_after = '$qty_after' ";
 				$data .=", qty_consumed = '$qty[$k]' ";
 				$data .=", sales_list_id = '$id' ";
-				// $amount1=$price[$k]*$qty[$k];
-				// $creator=$_SESSION['login_id'];
 				$data .=", creator = '$creator'";
 				$data .=", transaction_type  = '$type'";
-				// $data .=", creator = '$creator' ";
 				$data .=", date_created = '$date' ";
-
-				$save1[]=$this->db->query("INSERT INTO product_on_hand set ".$data);
-			endforeach;
+				$save1=$this->db->query("INSERT INTO product_on_hand set ".$data);
+			}
 			function check_item_available_quantity_by_batch_for_sale($product_id,$batch_no){
 				include 'db_connect.php';
 				$inn = mysqli_query($conn,"SELECT sum(qty) as inn FROM inventory where type = 1 and product_id = '".$product_id."' and batch_no = '".$batch_no."'");
@@ -893,7 +928,7 @@ Class Action {
 				$type=2;
 				$batchNo=check_the_batch_for_product($product_id);
 				$available_by_batch_on_sales=check_item_available_quantity_by_batch_for_sale($product_id,$batchNo);
-						if ($available_by_batch_on_sales > $qty):
+						if ($available_by_batch_on_sales > $qty){
 							$data1 = " product_on_hand_by_batch_id = '' ";
 							$data1 .= ", product_id = '$product_id' ";
 							$data1 .= ", batch_no = '$batchNo' ";
@@ -908,13 +943,13 @@ Class Action {
 							$data1 .= ", transaction_type = '$type' ";
 							$data1 .= ", creator = '$creator' ";
 							$data1 .= ", date_created = '$date' ";
-							$save4[] = mysqli_query($conn,"INSERT INTO product_on_hand_by_batch SET".$data1);
-							if ($save4) :
-								$success=1;
+							$save4 = mysqli_query($conn,"INSERT INTO product_on_hand_by_batch SET".$data1);
+							if ($save4) 
+								{$success=1;
 								return $success;
-								exit();
-							endif;
-						else:
+								exit();}
+						}	
+						else{
 							$data1 = " product_on_hand_by_batch_id = '' ";
 							$data1 .= ", product_id = '$product_id' ";
 							$data1 .= ", batch_no = '$batchNo' ";
@@ -930,18 +965,16 @@ Class Action {
 							$data1 .= ", transaction_type = '$type' ";
 							$data1 .= ", creator = '$creator' ";
 							$data1 .= ", date_created = '$date' ";
-							$save4[] = mysqli_query($conn,"INSERT INTO product_on_hand_by_batch SET".$data1);
-							if ($save4) :
+							$save4 = mysqli_query($conn,"INSERT INTO product_on_hand_by_batch SET".$data1);
+							if ($save4) 
 								product_sales_by_batch_algorism($product_id,$qty,$id,$type,$creator);
-							endif;
-						endif;
+							}	
 					}
-
-			foreach($product_id as $k =>$v):
+			foreach($product_id as $k =>$v){
 				$batchNo=check_the_batch_for_product($product_id[$k]);
 				$available_by_batch_on_sales=check_item_available_quantity_by_batch_for_sale($product_id[$k],$batchNo);
 				$ppid=$qty[$k];
-				if ($qty[$k] <= $available_by_batch_on_sales):
+				if ($qty[$k] <= $available_by_batch_on_sales){
 						$data = " product_on_hand_by_batch_id = '' ";
 						$data .= ", product_id = '$product_id[$k]' ";
 						$data .= ", batch_no = '$batchNo' ";
@@ -956,13 +989,12 @@ Class Action {
 						$data .= ", transaction_type = '$type' ";
 						$data .= ", creator = '$creator' ";
 						$data .= ", date_created = '$date' ";
-						$save41[]= $this->db->query("INSERT INTO product_on_hand_by_batch SET".$data);
+						$save41= $this->db->query("INSERT INTO product_on_hand_by_batch SET".$data);
 						$product_on_hand_by_batch_id=$this->db->insert_id;		
-				else:
+				}else{
 					$mm= product_sales_by_batch_algorism($product_id[$k],$qty[$k],$id,$creator);
-				endif;
-
-			endforeach;
+				}
+			}
 			
 			foreach($product_id as $k => $v){
 				$batchNo=check_the_batch_for_product($product_id[$k]);
@@ -977,10 +1009,10 @@ Class Action {
 				$data .= ", other_details = '$details' ";
 				$data .= ", remarks = 'Stock out from Sales-".$ref_no."' ";
 				
-				$save2[]= $this->db->query("INSERT INTO inventory set ".$data);	
+				$save2= $this->db->query("INSERT INTO inventory set ".$data);	
 			}
 			if(isset($save2) ){
-				foreach($product_id as $k => $v):
+				foreach($product_id as $k => $v){
 				$creator=$_SESSION['login_id'];
 				date_default_timezone_set("Africa/Nairobi");
 				$date=date("y-m-d h:i:sa");
@@ -994,8 +1026,8 @@ Class Action {
 				$data .=", creator = '$creator' ";
 				$data .=", date_created = '$date' ";
 
-				$save3[]=$this->db->query("INSERT INTO product_on_sales_lists set ".$data);
-				endforeach;
+				$save3=$this->db->query("INSERT INTO product_on_sales_lists set ".$data);
+				}
 				if ($save2) {
 					if ($save3) {
 						return $id;
@@ -1018,9 +1050,9 @@ Class Action {
 				$data .= ", remarks = 'Stock out from Sales-".$ref_no."' ";
 
 				if(!empty($inv_id[$k])){
-					$save2[]= $this->db->query("UPDATE inventory set ".$data." where id=".$inv_id[$k]);
+					$save2= $this->db->query("UPDATE inventory set ".$data." where id=".$inv_id[$k]);
 				}else{
-					$save2[]= $this->db->query("INSERT INTO inventory set ".$data);
+					$save2= $this->db->query("INSERT INTO inventory set ".$data);
 				}
 			}
 			if(isset($save2)){
@@ -1061,13 +1093,8 @@ Class Action {
 			$creator=$_SESSION['login_id'];
 			date_default_timezone_set("Africa/Nairobi");
 			$date=date("y-m-d h:i:sa");
-			// $datecreated= new DateTime('now');
-			// $data .= ", creator = '$creator' ";
-			// $data .= ", date_created = '$date' ";
 			
 			$sql_insert_profroma_invoice="INSERT INTO `profroma_invoice`( `profroma_invoice_name`, `profroma_invoice_to`, `invoice_number`, `creator`, `date_created`) VALUES ('".$profoma_invoice_name."','".$customer_name."','".$ref_no."','".$creator."','".$date."')";
-			// "INSERT INTO `profroma_invoice`(`profroma_invoice_id`, `profroma_invoice_name`, `profroma_invoice_to`, `invoice_number`, `creator`, `date_created`) VALUES ('','".$profoma_invoice_name."','".$customer_name."','".$ref_no."','".$creator."','".$date."')";
-			// $save = $this->db->query("INSERT INTO sales_list set ".$data);
 			$save21 = $this->db->query($sql_insert_profroma_invoice);
 			
 			foreach($product_id as $k => $v){
@@ -1081,37 +1108,13 @@ Class Action {
 				$data .= ", remarks = 'Stock out from Sales-".$ref_no."' ";
 				$amount[$k]=$price[$k]*$qty[$k];
 				$sql_insert_wholesale_invoice="INSERT INTO `wholesale_invoices`(`wholesale_invoive_id`, `invoice_number`,`product_id`,`rate_price`, `item_quantity`, `total_amount`, `creator`, `date_created`) VALUES ('','".$ref_no."','".$product_id[$k]."','".$price[$k]."','".$qty[$k]."','".$amount[$k]."','".$creator."','".$date."')";
-				// $save2[]= $this->db->query("INSERT INTO inventory set ".$data);
-				$save2[]= $this->db->query($sql_insert_wholesale_invoice);
-				// $id =$this->db->insert_id;
+				$save2= $this->db->query($sql_insert_wholesale_invoice);
 			}
 			if(isset($save2)){
 				return $ref_no;
 			}
 		}else{
 			return $id;
-			// $save = $this->db->query("UPDATE sales_list set ".$data." where id=".$id);
-			// $ids = implode(",",$inv_id);
-			// $this->db->query("DELETE FROM inventory where type = 1 and form_id ='$id' and id NOT IN (".$ids.") ");
-			// foreach($product_id as $k => $v){
-			// 	$data = " form_id = '$id' ";
-			// 	$data .= ", product_id = '$product_id[$k]' ";
-			// 	$data .= ", qty = '$qty[$k]' ";
-			// 	$data .= ", type = '2' ";
-			// 	$data .= ", stock_from = 'Sales' ";
-			// 	$details = json_encode(array('price'=>$price[$k],'qty'=>$qty[$k]));
-			// 	$data .= ", other_details = '$details' ";
-			// 	$data .= ", remarks = 'Stock out from Sales-".$ref_no."' ";
-
-			// 	if(!empty($inv_id[$k])){
-			// 		$save2[]= $this->db->query("UPDATE inventory set ".$data." where id=".$inv_id[$k]);
-			// 	}else{
-			// 		$save2[]= $this->db->query("INSERT INTO inventory set ".$data);
-			// 	}
-			// }
-			// if(isset($save2)){
-			// 	return $id;
-			// }
 		}
 	}
 	function delete_invoice(){
@@ -1124,8 +1127,6 @@ Class Action {
 	function datesalesreport(){
 		extract($_POST);
 		extract($_GET);
-		// $todate=$_POST["todate"];
-		// $fromdate=$_POST["fromdate"];
 		$mode;
 
 		if ($mode==1) {
@@ -1170,7 +1171,7 @@ Class Action {
 		$salesprofit=$this->db->query($q1);
 				if ($salesprofit) {
 					while($row=mysqli_fetch_assoc($salesprofit)){
-						$pr[] = array(
+						$pr = array(
 							"Category"=>$row['Category'],
 							"Total_quantity_sold"=>$row['Total_quantity_sold'],
 							"Amount"=>$row['Amount'],
@@ -1188,8 +1189,6 @@ Class Action {
 		extract($_POST);
 		extract($_GET);
 		$reportType;
-
-		// $sql_count_transaction="SELECT date(sl.date_updated) as date_created,COUNT(*) as Total_quantity_sold,'' as Amount,'' as Profit from sales_list sl GROUP BY date(sl.date_updated)";
 		if ($reportType==1) {
 			$sql_new="SELECT DATE_FORMAT(pss.product_sales_date_created, '%M %d %Y') as 'date_created',
 					SUM(COALESCE(CASE WHEN pss.item_category_id THEN pss.product_qty ELSE 0 END, 0)) AS 'Total_quantity_sold',
@@ -1202,7 +1201,7 @@ Class Action {
 		$report1=$this->db->query($sql_new);
 		if ($report1) {
 			while ($row=mysqli_fetch_assoc($report1)) {
-				$data_report[]=array(
+				$data_report=array(
 					"date_created"=>$row['date_created'],
 					"Total_quantity_sold"=>$row['Total_quantity_sold'],
 					"Amount"=>$row['Amount'],
@@ -1220,7 +1219,7 @@ Class Action {
 			$data = " product_id = $product_id[$key] ";
 			$data .= ", qty = $qty[$key] ";
 			$data .= ", date_expired = '$expiry_date[$key]' ";
-			$save[] = $this->db->query("INSERT INTO expired_product set $data ");
+			$save = $this->db->query("INSERT INTO expired_product set $data ");
 		}
 		if(isset($save))
 			return 1;

@@ -14,13 +14,13 @@ if($action == 'login2'){
 	if($login)
 		echo $login;
 }
-if ($action== 'datesalesreport') {
+if ($action == 'datesalesreport') {
 	$datesalesreport=$crud->datesalesreport();
 	if ($datesalesreport) {
 		echo $datesalesreport;
 	}
 }
-if ($action== 'report_presentation') {
+if ($action == 'report_presentation') {
 	extract($_GET);
 	$report_presentation=$crud->report_presentation();
 	if ($report_presentation) {
@@ -44,6 +44,16 @@ if($action == 'save_user'){
 }
 if($action == 'delete_user'){
 	$save = $crud->delete_user();
+	if($save)
+		echo $save;
+}
+if($action == 'save_role'){
+	$save = $crud->save_role();
+	if($save)
+		echo $save;
+}
+if($action == 'delete_role'){
+	$save = $crud->delete_role();
 	if($save)
 		echo $save;
 }
@@ -87,7 +97,6 @@ if($action == "delete_type"){
 	if($save)
 		echo $save;
 }
-
 if($action == "save_supplier"){
 	$save = $crud->save_supplier();
 	if($save)

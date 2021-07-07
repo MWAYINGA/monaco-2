@@ -320,6 +320,7 @@ if(isset($_GET['id'])){
 			end_load();
 			return false;
 		}
+		console.log($(this).serialize());
 		$.ajax({
 			url:'ajax.php?action=save_receiving',
 		    method: 'POST',
