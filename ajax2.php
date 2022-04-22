@@ -80,6 +80,11 @@ if($action == "save_product"){
 	if($save)
 		echo $save;
 }
+if($action == "save_product1"){
+	$save = $crud->save_product();
+	if($save)
+		echo $save;
+}
 if($action == "delete_product"){
 	$save = $crud->delete_product();
 	if($save)
